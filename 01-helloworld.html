@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hello! webGL</title>
+  <script>
+    let webgl = null;
+
+    function initWebglCtx() {
+      var canvas = document.querySelector("#canvas")
+      // 创建并返回webgl渲染上下文(WebGLRenderingContext)
+      webgl = canvas.getContext("webgl")
+      // 设置webgl缓冲区画布大小
+      webgl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
+      /*
+      设置填充颜色
+      如果WebGL上下文成功初始化，变量 ‘gl’ 会用来引用该上下文。在这个例子里，我们将清除色设为黑色，然后用该颜色清除上下文。（用背景颜色重绘canvas）。
+      */
+      webgl.clearColor(253 / 255, 124 / 255, 125 / 255, 1)
+      /*
+        填充 clrarBufferMask:
+        COLOR_BUFFER_BIT 颜色缓冲区 - 之前设置的颜色 
+        DEPTH_BUFFER_BIT 深度缓冲区 - 之前设置的深度
+        STENCIL_BUFFER_BIT 模板参数 - 存储
+
+      */
+      webgl.clear(webgl.COLOR_BUFFER_BIT)
+    }
+  </script>
+</head>
+
+<body onload="initWebglCtx()">
+  <canvas id="canvas" width="800px" height="600px"></canvas>
+</body>
+
+</html>

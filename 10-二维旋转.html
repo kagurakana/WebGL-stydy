@@ -1,0 +1,213 @@
+<!-- https://webglfundamentals.org/webgl/lessons/zh_cn/webgl-2d-rotation.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+    <script id="vs-shader" type="nojs">
+      attribute vec2 a_position;
+
+      uniform vec2 u_rotation;
+      uniform vec2 u_resolution;
+      uniform vec2 u_translation;
+
+      void main(){
+        // 旋转
+        vec2 rotationPosition =  vec2(
+          a_position.x * u_rotation.y + a_position.y * u_rotation.x,
+          a_position.y * u_rotation.y - a_position.x * u_rotation.x);
+     
+        // 整体平移
+        vec2 position = rotationPosition + u_translation;
+        vec2 zeroToOne = position / u_resolution;
+
+        vec2 zeroToTwo = zeroToOne * 2.0;
+        vec2 clipSpace = zeroToTwo - 1.0;
+        // flip Y
+        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+      }
+    </script>
+    <script id="fs-shader" type="nojs">
+      precision mediump float;
+
+      uniform vec4 u_color;
+
+      void main(){
+        gl_FragColor = u_color;
+      }
+    </script>
+  </head>
+
+  <body onload="main()">
+    <canvas
+      id="canvas"
+      width="800px"
+      height="800px"
+      style="display: block;"
+    ></canvas>
+    <label for="x">x:</label>
+    <input value="0" type="range" name="x" id="x" />
+    <label for="y">y: </label>
+    <input value="0" type="range" id="y" name="y" />
+    <input value="100" type="range" id="rotateX" name="rotateX" />
+    <input value="0" type="range" id="rotateY" name="rotateY" />
+  </body>
+  <script src="./webglUtils.js"></script>
+  <script>
+    function main() {
+      let canvas = document.querySelector("#canvas");
+      let gl = canvas.getContext("webgl");
+      if (!gl) {
+        return;
+      }
+      let program = webglUtils.createProgramFromScripts(gl, [
+        "vs-shader",
+        "fs-shader",
+      ]);
+      let positionLocation = gl.getAttribLocation(program, "a_position");
+
+      let resolutionLocation = gl.getUniformLocation(program, "u_resolution");
+      let colorLocation = gl.getUniformLocation(program, "u_color");
+      // 平移
+      let translationLocation = gl.getUniformLocation(program, "u_translation");
+      // 旋转
+      let rotationLocation = gl.getUniformLocation(program, "u_rotation");
+      let positionBuffer = gl.createBuffer();
+
+      // think as gl.ARRAY_BUFFER = positionBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+      // 将几何数据存到缓冲
+
+      setGeometry(gl);
+      let translation = [150, 150];
+      let rotation = [0, 1];
+      let width = 100;
+      let height = 30;
+      let color = [Math.random(), Math.random(), Math.random(), 1];
+      drawScene();
+
+      let xDom = document.querySelector("#x");
+      xDom.addEventListener("input", () => {
+        translation[0] = (xDom.value * (gl.canvas.width - 100)) / 100;
+        drawScene();
+      });
+      let yDom = document.querySelector("#y");
+      yDom.addEventListener("input", () => {
+        translation[1] = (yDom.value * (gl.canvas.height - 30)) / 100;
+        drawScene();
+      });
+
+      let rotateDoms = [];
+      rotateDoms.push(
+        document.querySelector("#rotateX"),
+        // document.querySelector("#rotateY")
+      );
+      rotateDoms.forEach((dom, index) => {
+        dom.addEventListener("input", (e) => {
+          rotation[index] = e.target.value / 100;
+          // x^2 + y^2 = 1 单位园
+          rotation[1] =  Math.sqrt( 1- rotation[0])
+        drawScene();
+        });
+      });
+
+      function drawScene() {
+        webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.useProgram(program);
+        gl.enableVertexAttribArray(positionLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        // setRectangle(gl, translation[0], translation[1], width, height);
+        var size = 2;
+        var type = gl.FLOAT;
+        var normailize = false;
+        var stride = 0;
+        var offset = 0;
+        gl.vertexAttribPointer(
+          positionLocation,
+          size,
+          type,
+          normailize,
+          stride,
+          offset
+        );
+        gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+        gl.uniform4fv(colorLocation, color);
+        gl.uniform2fv(translationLocation, translation);
+        gl.uniform2fv(rotationLocation, rotation);
+        var primitiveType = gl.TRIANGLES;
+        var offset = 0;
+        var count = 18;
+        gl.drawArrays(primitiveType, offset, count);
+      }
+    }
+    // function setRectangle(gl, x, y, width, height) {
+    //   var x1 = x;
+    //   var x2 = x + width;
+    //   var y1 = y;
+    //   var y2 = y + height;
+    //   gl.bufferData(
+    //     gl.ARRAY_BUFFER,
+    //     new Float32Array([x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2]),
+    //     gl.STATIC_DRAW
+    //   );
+    // }
+    function setGeometry(gl) {
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+          // 左竖
+          0,
+          0,
+          30,
+          0,
+          0,
+          150,
+          0,
+          150,
+          30,
+          0,
+          30,
+          150,
+
+          // 上横
+          30,
+          0,
+          100,
+          0,
+          30,
+          30,
+          30,
+          30,
+          100,
+          0,
+          100,
+          30,
+
+          // 中横
+          30,
+          60,
+          67,
+          60,
+          30,
+          90,
+          30,
+          90,
+          67,
+          60,
+          67,
+          90,
+        ]),
+        gl.STATIC_DRAW
+      );
+    }
+  </script>
+</html>
